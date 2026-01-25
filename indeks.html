@@ -1,0 +1,2306 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis Learning System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'jakarta': ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#fdf2f8',
+              100: '#fce7f3',
+              200: '#fbcfe8',
+              300: '#f9a8d4',
+              400: '#f472b6',
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d',
+            },
+            success: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            },
+            surface: '#ffffff',
+            background: '#f8fafc',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .question-nav-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .question-nav-btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    .option-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .option-btn:hover:not(.selected):not(.correct):not(.incorrect) {
+      border-color: #f472b6;
+      background-color: #fdf2f8;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .toast {
+      animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s;
+    }
+    
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes toastOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full font-jakarta bg-background text-slate-800 overflow-auto">
+  <div id="app" class="h-full w-full"><!-- Loading Indicator -->
+   <div id="loading-indicator" class="hidden fixed inset-0 bg-black/50 z-[70] flex items-center justify-center">
+    <div class="bg-surface rounded-2xl p-8 flex flex-col items-center gap-4">
+     <div class="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+     <p class="text-slate-700 font-medium">Memuat data...</p>
+    </div>
+   </div><!-- Toast Container -->
+   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div><!-- Portal Selection -->
+   <div id="portal-selection" class="h-full w-full flex items-center justify-center p-4 relative overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXZ5d8vbJuq8xmQpUlkGqLQJI4qFwBh4AGLxVxYUiWDNnU5oTN5YtAcRPPHmfYjLDk5y5lqJwGYLPu5K-bPFb_xZTtYLwKRLKHJhqLwKxf0kxkx0kxkx/s1600/smp+negeri+1+pucakwangi.jpg'); opacity: 0.15;"></div>
+    <div class="w-full max-w-2xl relative z-10">
+     <div class="text-center mb-10 fade-in">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl shadow-lg shadow-primary-200 mb-6">
+       <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+       </svg>
+      </div>
+      <h1 id="main-title" class="text-3xl md:text-4xl font-bold text-slate-800 mb-3">Sistem Kuis Digital</h1>
+      <p id="welcome-text" class="text-slate-500 text-lg">Pilih portal untuk melanjutkan</p>
+     </div>
+     <div class="grid md:grid-cols-2 gap-6"><!-- Student Portal Card --> <button onclick="showStudentLogin()" class="group bg-surface rounded-2xl p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:border-primary-200 transition-all duration-300 text-left slide-up">
+       <div class="w-14 h-14 bg-gradient-to-br from-success-400 to-success-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-lg shadow-success-200">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+       </div><h2 class="text-xl font-bold text-slate-800 mb-2">Portal Siswa</h2><p class="text-slate-500 text-sm">Akses ujian dan lihat hasil belajar Anda</p>
+       <div class="mt-5 flex items-center text-primary-500 font-medium text-sm">
+        Masuk sebagai Siswa 
+        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+       </div></button> <!-- Admin Portal Card --> <button onclick="showAdminLogin()" class="group bg-surface rounded-2xl p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:border-primary-200 transition-all duration-300 text-left slide-up" style="animation-delay: 0.1s">
+       <div class="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-lg shadow-primary-200">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+       </div><h2 class="text-xl font-bold text-slate-800 mb-2">Portal Admin</h2><p class="text-slate-500 text-sm">Kelola soal ujian dan pantau hasil siswa</p>
+       <div class="mt-5 flex items-center text-primary-500 font-medium text-sm">
+        Masuk sebagai Admin 
+        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+       </div></button>
+     </div>
+    </div>
+   </div><!-- Admin Login -->
+   <div id="admin-login" class="hidden h-full w-full flex items-center justify-center p-4">
+    <div class="w-full max-w-md fade-in"><button onclick="showPortalSelection()" class="flex items-center text-slate-500 hover:text-primary-500 mb-6 transition-colors">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg> Kembali </button>
+     <div class="bg-surface rounded-2xl p-8 shadow-sm border border-slate-100">
+      <div class="text-center mb-8">
+       <div class="w-16 h-16 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-200">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+       </div>
+       <h2 class="text-2xl font-bold text-slate-800">Portal Admin</h2>
+       <p class="text-slate-500 mt-1">Masukkan password untuk melanjutkan</p>
+      </div>
+      <form onsubmit="verifyAdminPassword(event)" class="space-y-5">
+       <div><label for="admin-password" class="block text-sm font-medium text-slate-700 mb-2">Password Admin</label> <input type="password" id="admin-password" required placeholder="Masukkan password" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+       </div><button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg shadow-primary-200 hover:shadow-xl"> Masuk </button>
+      </form>
+     </div>
+    </div>
+   </div><!-- Student Login -->
+   <div id="student-login" class="hidden h-full w-full flex items-center justify-center p-4">
+    <div class="w-full max-w-md fade-in"><button onclick="showPortalSelection()" class="flex items-center text-slate-500 hover:text-primary-500 mb-6 transition-colors">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg> Kembali </button>
+     <div class="bg-surface rounded-2xl p-8 shadow-sm border border-slate-100">
+      <div class="text-center mb-8">
+       <div class="w-16 h-16 bg-gradient-to-br from-success-400 to-success-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-success-200">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+       </div>
+       <h2 class="text-2xl font-bold text-slate-800">Portal Siswa</h2>
+       <p class="text-slate-500 mt-1">Masukkan data untuk memulai</p>
+      </div>
+      <form onsubmit="continueToMaterialSelection(event)" class="space-y-5">
+       <div><label for="student-name" class="block text-sm font-medium text-slate-700 mb-2">Nama Lengkap</label> <input type="text" id="student-name" required placeholder="Masukkan nama Anda" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+       </div>
+       <div><label for="student-class" class="block text-sm font-medium text-slate-700 mb-2">Kelas</label> <select id="student-class" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all"> <option value="">Pilih Kelas</option> <option value="7E">7E</option> <option value="7F">7F</option> <option value="7G">7G</option> </select>
+       </div><button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-success-500 to-success-600 text-white font-semibold rounded-xl hover:from-success-600 hover:to-success-700 transition-all shadow-lg shadow-success-200 hover:shadow-xl"> Lanjutkan </button>
+      </form>
+     </div>
+    </div>
+   </div><!-- Material Selection -->
+   <div id="material-selection" class="hidden h-full w-full flex flex-col">
+    <header class="bg-surface border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+     <div class="flex items-center gap-3"><button onclick="showStudentLogin()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+       <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <div class="w-10 h-10 bg-gradient-to-br from-success-400 to-success-600 rounded-xl flex items-center justify-center">
+       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+       </svg>
+      </div>
+      <div>
+       <h1 class="font-bold text-slate-800">Pilih Materi</h1>
+       <p id="material-student-name" class="text-sm text-slate-500"></p>
+      </div>
+     </div>
+    </header>
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin">
+     <div class="max-w-4xl mx-auto">
+      <div class="mb-6">
+       <h2 class="text-2xl font-bold text-slate-800 mb-2">Materi Tersedia</h2>
+       <p class="text-slate-500">Pilih materi yang ingin Anda kerjakan</p>
+      </div>
+      <div id="materials-grid" class="grid md:grid-cols-2 gap-4"><!-- Materials will be rendered here -->
+      </div>
+      <div id="no-materials" class="hidden text-center py-12">
+       <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+       </div>
+       <p class="text-slate-500">Belum ada materi yang tersedia</p>
+      </div>
+     </div>
+    </div>
+   </div><!-- Tab Block Overlay -->
+   <div id="tab-block-overlay" class="hidden fixed inset-0 bg-red-600 z-[60] flex items-center justify-center">
+    <div class="text-center text-white p-8 max-w-2xl">
+     <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+     </div>
+     <h2 class="text-4xl font-bold mb-4">⚠️ KUIS DIBLOKIR!</h2>
+     <p class="text-2xl mb-6">Anda terdeteksi membuka tab/aplikasi lain</p>
+     <div class="bg-white/20 rounded-2xl p-6 backdrop-blur-sm mb-6">
+      <p class="text-lg mb-4">Kuis akan dibuka kembali dalam:</p>
+      <div class="text-7xl font-bold font-mono" id="block-countdown">
+       02:00
+      </div>
+     </div>
+     <div class="bg-white/10 rounded-xl p-4 text-left max-w-md mx-auto">
+      <p class="font-semibold mb-2">⚠️ PERINGATAN:</p>
+      <ul class="text-sm space-y-1 list-disc list-inside">
+       <li>Jangan membuka tab/aplikasi lain selama kuis</li>
+       <li>Jangan meminimalkan browser</li>
+       <li>Pelanggaran: <span id="violation-count" class="font-bold">1</span> kali</li>
+       <li>Tetap di halaman kuis sampai selesai</li>
+      </ul>
+     </div>
+    </div>
+   </div><!-- Exam View -->
+   <div id="exam-view" class="hidden h-full w-full flex flex-col"><!-- Exam Header -->
+    <header class="bg-surface border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+     <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center">
+       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+       </svg>
+      </div>
+      <div>
+       <h1 id="exam-header-title" class="font-bold text-slate-800">Kuis Digital</h1>
+       <p id="student-name-display" class="text-sm text-slate-500"></p>
+      </div>
+     </div>
+     <div class="flex items-center gap-3">
+      <div id="timer" class="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg font-mono font-semibold flex items-center gap-2">
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg><span>30:00</span>
+      </div><button onclick="confirmFinishExam()" class="hidden md:flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium">
+       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+       </svg> Selesai </button>
+     </div>
+    </header><!-- Exam Content -->
+    <div class="flex-1 overflow-hidden flex flex-col lg:flex-row"><!-- Question Panel -->
+     <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin">
+      <div id="question-container" class="max-w-3xl mx-auto"><!-- Question content will be rendered here -->
+      </div>
+     </div><!-- Navigation Panel (Desktop) -->
+     <div class="hidden lg:block w-80 bg-surface border-l border-slate-100 p-6 overflow-y-auto scrollbar-thin">
+      <h3 class="font-semibold text-slate-800 mb-4">Navigasi Soal</h3>
+      <div id="nav-grid-desktop" class="grid grid-cols-5 gap-2"><!-- Navigation buttons will be rendered here -->
+      </div>
+      <div class="mt-6 pt-6 border-t border-slate-100">
+       <div class="flex items-center gap-4 text-sm text-slate-500 mb-4">
+        <div class="flex items-center gap-2">
+         <div class="w-4 h-4 rounded bg-success-500"></div><span>Dijawab</span>
+        </div>
+        <div class="flex items-center gap-2">
+         <div class="w-4 h-4 rounded bg-slate-200"></div><span>Belum</span>
+        </div>
+       </div>
+       <div id="progress-info" class="text-sm text-slate-600"></div>
+      </div>
+     </div>
+    </div><!-- Mobile Navigation -->
+    <div class="lg:hidden bg-surface border-t border-slate-100 p-4">
+     <div class="flex items-center justify-between gap-3 mb-3"><button onclick="prevQuestion()" id="prev-btn" class="flex-1 py-2 px-4 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"> ← Sebelumnya </button> <button onclick="showMobileNav()" class="py-2 px-4 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200 transition-colors">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+       </svg></button> <button onclick="nextQuestion()" id="next-btn" class="flex-1 py-2 px-4 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"> Selanjutnya → </button>
+     </div><button onclick="confirmFinishExam()" class="w-full py-3 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 transition-colors"> Selesai Kuis </button>
+    </div><!-- Mobile Navigation Modal -->
+    <div id="mobile-nav-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end lg:hidden">
+     <div class="bg-surface w-full rounded-t-2xl p-6 max-h-[70%] overflow-y-auto slide-up">
+      <div class="flex items-center justify-between mb-4">
+       <h3 class="font-semibold text-slate-800">Navigasi Soal</h3><button onclick="hideMobileNav()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg></button>
+      </div>
+      <div id="nav-grid-mobile" class="grid grid-cols-5 gap-2"><!-- Mobile navigation buttons will be rendered here -->
+      </div>
+     </div>
+    </div>
+   </div><!-- Confirm Finish Modal -->
+   <div id="confirm-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface rounded-2xl p-6 max-w-sm w-full slide-up">
+     <div class="text-center">
+      <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+       <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
+      </div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2">Selesaikan Kuis?</h3>
+      <p id="confirm-message" class="text-slate-500 mb-6">Anda telah menjawab 0 dari 0 soal.</p>
+      <div class="flex gap-3"><button onclick="hideConfirmModal()" class="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium"> Kembali </button> <button onclick="finishExam()" class="flex-1 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium"> Ya, Selesai </button>
+      </div>
+     </div>
+    </div>
+   </div><!-- Edit Questions Modal -->
+   <div id="edit-questions-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-surface rounded-2xl max-w-4xl w-full my-8 slide-up">
+     <div class="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-surface z-10">
+      <div>
+       <h3 class="text-xl font-bold text-slate-800">Edit Soal Materi</h3>
+       <p id="edit-material-name" class="text-sm text-slate-500"></p>
+      </div><button onclick="closeEditModal()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+       <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+       </svg></button>
+     </div>
+     <div class="p-6">
+      <div class="mb-4"><label class="block text-sm font-medium text-slate-700 mb-2">Format Input:</label>
+       <div class="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 font-mono overflow-x-auto">
+        <pre class="whitespace-pre-wrap">1. Apa ibukota Indonesia?
+A. Jakarta*
+B. Surabaya
+C. Bandung
+D. Medan
+Penjelasan: Jakarta adalah ibukota Indonesia.
+
+2. Siapa presiden pertama Indonesia?
+A. Soekarno
+B. Soeharto
+Jawaban: A
+Penjelasan: Soekarno adalah proklamator.</pre>
+       </div>
+      </div>
+      <div class="mb-4"><label for="edit-question-input" class="block text-sm font-medium text-slate-700 mb-2">Edit Soal:</label> <textarea id="edit-question-input" rows="16" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all font-mono text-sm resize-none scrollbar-thin" placeholder="Paste atau edit soal di sini..."></textarea>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 mb-4"><button type="button" onclick="parseEditedQuestions()" class="flex-1 py-2 px-4 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors font-medium flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg> Parse &amp; Preview Soal </button> <button type="button" onclick="loadCurrentQuestions()" class="py-2 px-4 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium"> Load Soal Saat Ini </button>
+      </div>
+      <div id="parsed-preview-edit" class="hidden mb-4">
+       <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-100">
+         <div>
+          <h4 class="font-bold text-slate-800">Preview Soal</h4>
+          <p id="parsed-count-edit" class="text-sm text-slate-500">0 soal terdeteksi</p>
+         </div>
+        </div>
+        <div id="preview-list-edit" class="divide-y divide-slate-200 max-h-64 overflow-y-auto scrollbar-thin"><!-- Parsed questions will appear here -->
+        </div>
+       </div>
+      </div>
+      <div class="flex gap-3 sticky bottom-0 bg-surface pt-4 border-t border-slate-100"><button onclick="closeEditModal()" class="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium"> Batal </button> <button onclick="saveEditedQuestions()" id="save-edited-btn" class="flex-1 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg> Simpan Perubahan </button>
+      </div>
+     </div>
+    </div>
+   </div><!-- Results View -->
+   <div id="results-view" class="hidden h-full w-full overflow-y-auto">
+    <div class="max-w-2xl mx-auto p-4 md:p-8">
+     <div class="text-center mb-8 fade-in">
+      <div id="result-icon" class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6"><!-- Icon will be set based on score -->
+      </div>
+      <h1 class="text-3xl font-bold text-slate-800 mb-2">Hasil Kuis</h1>
+      <p id="result-student-name" class="text-slate-500"></p>
+     </div>
+     <div class="bg-surface rounded-2xl p-6 shadow-sm border border-slate-100 mb-6 slide-up">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+       <div class="p-4 bg-slate-50 rounded-xl">
+        <p class="text-2xl font-bold text-slate-800" id="result-score">0</p>
+        <p class="text-sm text-slate-500">Nilai</p>
+       </div>
+       <div class="p-4 bg-success-50 rounded-xl">
+        <p class="text-2xl font-bold text-success-600" id="result-correct">0</p>
+        <p class="text-sm text-slate-500">Benar</p>
+       </div>
+       <div class="p-4 bg-red-50 rounded-xl">
+        <p class="text-2xl font-bold text-red-500" id="result-wrong">0</p>
+        <p class="text-sm text-slate-500">Salah</p>
+       </div>
+       <div class="p-4 bg-slate-50 rounded-xl">
+        <p class="text-2xl font-bold text-slate-600" id="result-time">00:00</p>
+        <p class="text-sm text-slate-500">Waktu</p>
+       </div>
+      </div><!-- Violation Info -->
+      <div id="violation-info" class="hidden mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+       <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div class="flex-1">
+         <p class="font-semibold text-amber-800 mb-1">⚠️ Pelanggaran Terdeteksi</p>
+         <p class="text-sm text-amber-700">Anda membuka tab/aplikasi lain sebanyak <span id="result-violations" class="font-bold">0</span> kali selama kuis.</p>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="flex flex-col sm:flex-row gap-3 mb-8"><button onclick="showReview()" class="flex-1 py-3 px-4 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold flex items-center justify-center gap-2">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+       </svg> Lihat Pembahasan </button> <button onclick="showPortalSelection()" class="flex-1 py-3 px-4 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-semibold flex items-center justify-center gap-2">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+       </svg> Kembali ke Beranda </button>
+     </div>
+    </div>
+   </div><!-- Review View -->
+   <div id="review-view" class="hidden h-full w-full flex flex-col">
+    <header class="bg-surface border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+     <div class="flex items-center gap-3"><button onclick="showResults()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+       <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <div>
+       <h1 class="font-bold text-slate-800">Pembahasan Soal</h1>
+       <p id="review-progress" class="text-sm text-slate-500">Soal 1 dari 20</p>
+      </div>
+     </div>
+    </header>
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin">
+     <div id="review-container" class="max-w-3xl mx-auto"><!-- Review content will be rendered here -->
+     </div>
+    </div>
+    <div class="bg-surface border-t border-slate-100 p-4">
+     <div class="flex items-center justify-between gap-3 max-w-3xl mx-auto"><button onclick="prevReview()" id="prev-review-btn" class="flex-1 py-2 px-4 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"> ← Sebelumnya </button> <span id="review-counter" class="text-slate-500 font-medium">1/20</span> <button onclick="nextReview()" id="next-review-btn" class="flex-1 py-2 px-4 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"> Selanjutnya → </button>
+     </div>
+    </div>
+   </div><!-- Admin Portal -->
+   <div id="admin-portal" class="hidden h-full w-full flex flex-col">
+    <header class="bg-surface border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+     <div class="flex items-center gap-3"><button onclick="showPortalSelection()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+       <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+       </svg></button>
+      <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center">
+       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+       </svg>
+      </div>
+      <h1 class="font-bold text-slate-800">Admin Portal</h1>
+     </div>
+    </header>
+    <div class="flex-1 overflow-y-auto"><!-- Admin Tabs -->
+     <div class="bg-surface border-b border-slate-100 px-4">
+      <div class="flex gap-1 max-w-6xl mx-auto"><button onclick="showAdminTab('materials')" id="tab-materials" class="px-4 py-3 font-medium text-primary-600 border-b-2 border-primary-500 transition-colors"> Kelola Materi </button> <button onclick="showAdminTab('scores')" id="tab-scores" class="px-4 py-3 font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-colors"> Hasil Siswa </button>
+      </div>
+     </div><!-- Kelola Materi Tab -->
+     <div id="admin-materials" class="p-4 md:p-6 max-w-6xl mx-auto">
+      <div class="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-6">
+       <div class="p-6 border-b border-slate-100">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">Tambah Materi Baru</h2>
+        <p class="text-slate-500">Buat materi ujian baru dengan jadwal pembukaan dan soal-soal</p>
+       </div>
+       <div class="p-6">
+        <form onsubmit="addMaterial(event)" class="space-y-6"><!-- Material Info -->
+         <div class="space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+           <div><label for="material-name" class="block text-sm font-medium text-slate-700 mb-2">Nama Materi</label> <input type="text" id="material-name" required placeholder="Contoh: Matematika Bab 1" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+           </div>
+           <div><label for="material-unlock-date" class="block text-sm font-medium text-slate-700 mb-2">Tanggal &amp; Waktu Buka</label> <input type="datetime-local" id="material-unlock-date" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+           </div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+           <div><label for="material-deadline" class="block text-sm font-medium text-slate-700 mb-2">Deadline Pengerjaan</label> <input type="datetime-local" id="material-deadline" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+           </div>
+           <div><label for="material-duration" class="block text-sm font-medium text-slate-700 mb-2">Durasi Kuis (menit)</label> <input type="number" id="material-duration" required min="5" max="180" value="30" placeholder="30" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+           </div>
+          </div>
+          <div><label for="material-description" class="block text-sm font-medium text-slate-700 mb-2">Deskripsi Materi</label> <textarea id="material-description" rows="2" placeholder="Deskripsi singkat tentang materi..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all resize-none"></textarea>
+          </div>
+          <div class="flex items-center gap-3"><input type="checkbox" id="material-active" checked class="w-5 h-5 text-primary-500 border-slate-300 rounded focus:ring-primary-100"> <label for="material-active" class="text-sm text-slate-700">Aktifkan materi sekarang</label>
+          </div>
+         </div><!-- Questions Section -->
+         <div class="border-t border-slate-200 pt-6">
+          <h3 class="text-lg font-bold text-slate-800 mb-3">Soal-soal Materi</h3>
+          <div class="mb-4"><label class="block text-sm font-medium text-slate-700 mb-2">Format Input:</label>
+           <div class="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 font-mono overflow-x-auto">
+            <pre class="whitespace-pre-wrap">1. Apa ibukota Indonesia?
+A. Jakarta*
+B. Surabaya
+C. Bandung
+D. Medan
+Penjelasan: Jakarta adalah ibukota Indonesia.
+
+2. Siapa presiden pertama Indonesia?
+A. Soekarno
+B. Soeharto
+Jawaban: A
+Penjelasan: Soekarno adalah proklamator.</pre>
+           </div>
+          </div>
+          <div class="mb-4"><label for="question-input" class="block text-sm font-medium text-slate-700 mb-2">Paste Soal di Sini:</label> <textarea id="question-input" rows="12" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all font-mono text-sm resize-none" placeholder="Paste soal-soal di sini..."></textarea>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 mb-4"><button type="button" onclick="parseQuestionsInForm()" class="flex-1 py-2 px-4 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors font-medium flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg> Parse &amp; Preview Soal </button> <button type="button" onclick="loadSampleQuestionsInForm()" class="py-2 px-4 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium"> Load Contoh </button>
+          </div><!-- Parsed Preview -->
+          <div id="parsed-preview-form" class="hidden">
+           <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-100">
+             <div>
+              <h4 class="font-bold text-slate-800">Preview Soal</h4>
+              <p id="parsed-count-form" class="text-sm text-slate-500">0 soal terdeteksi</p>
+             </div>
+            </div>
+            <div id="preview-list-form" class="divide-y divide-slate-200 max-h-64 overflow-y-auto scrollbar-thin"><!-- Parsed questions will appear here -->
+            </div>
+           </div>
+          </div>
+         </div><button type="submit" id="add-material-btn" class="w-full py-3 px-6 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg> Tambah Materi dengan Soal </button>
+        </form>
+       </div>
+      </div><!-- Materials List -->
+      <div class="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+       <div class="p-6 border-b border-slate-100">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">Daftar Materi</h2>
+        <p class="text-slate-500">Kelola semua materi yang tersedia</p>
+       </div>
+       <div id="materials-list" class="divide-y divide-slate-100"><!-- Materials will be rendered here -->
+       </div>
+       <div id="no-materials-admin" class="hidden p-12 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+         <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+         </svg>
+        </div>
+        <p class="text-slate-500">Belum ada materi yang dibuat.</p>
+       </div>
+      </div>
+     </div><!-- Student Scores Tab -->
+     <div id="admin-scores" class="hidden p-4 md:p-6 max-w-6xl mx-auto">
+      <div class="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div>
+         <h2 class="text-xl font-bold text-slate-800 mb-2">Hasil Kuis Siswa</h2>
+         <p class="text-slate-500">Daftar hasil kuis yang telah diselesaikan.</p>
+        </div><button onclick="downloadExcel()" class="flex items-center gap-2 px-4 py-2 bg-success-500 text-white rounded-xl hover:bg-success-600 transition-colors font-medium">
+         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+         </svg> Download Excel </button>
+       </div>
+       <div class="overflow-x-auto">
+        <table class="w-full">
+         <thead class="bg-slate-50">
+          <tr>
+           <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nama Siswa</th>
+           <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nilai</th>
+           <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Benar/Total</th>
+           <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Waktu</th>
+          </tr>
+         </thead>
+         <tbody id="scores-table-body" class="divide-y divide-slate-100"><!-- Scores will be rendered here -->
+         </tbody>
+        </table>
+       </div>
+       <div id="no-scores" class="hidden p-12 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+         <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+         </svg>
+        </div>
+        <p class="text-slate-500">Belum ada hasil ujian.</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // ==================== Google Apps Script Configuration ====================
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxckW2K3iH-r26i5orxD328K4-CJNMxoK5GnciUsaYPTQbckJx0L73fxzAQnmJ4ZQQmeQ/exec';
+    
+    // ==================== State Management ====================
+    const defaultConfig = {
+      app_title: 'Sistem Kuis Digital',
+      exam_title: 'Kuis Digital',
+      welcome_message: 'Pilih portal untuk melanjutkan',
+      primary_color: '#ec4899',
+      secondary_color: '#10b981',
+      background_color: '#f8fafc',
+      text_color: '#1e293b',
+      surface_color: '#ffffff'
+    };
+
+    let config = { ...defaultConfig };
+    let allData = [];
+    let materials = [];
+    let examResults = [];
+    let selectedMaterial = null;
+    let editingMaterialId = null;
+    let editedQuestions = [];
+    
+    // Exam State
+    let currentStudent = '';
+    let currentClass = '';
+    let currentQuestionIndex = 0;
+    let studentAnswers = {};
+    let examStartTime = null;
+    let examDuration = 30 * 60; // 30 minutes in seconds
+    let timerInterval = null;
+    let questions = [];
+    let parsedQuestions = [];
+    let reviewIndex = 0;
+    let examResultsData = null;
+    
+    // Tab Security State
+    let isBlocked = false;
+    let blockEndTime = null;
+    let blockTimerInterval = null;
+    let tabViolationCount = 0;
+
+    // ==================== Navigation Functions (MUST BE AT TOP) ====================
+    function showAdminLogin() {
+      hideAllViews();
+      document.getElementById('admin-login').classList.remove('hidden');
+    }
+
+    function showPortalSelection() {
+      hideAllViews();
+      document.getElementById('portal-selection').classList.remove('hidden');
+      resetExamState();
+    }
+
+    function showStudentLogin() {
+      hideAllViews();
+      document.getElementById('student-login').classList.remove('hidden');
+    }
+
+    function hideAllViews() {
+      const views = ['portal-selection', 'admin-login', 'student-login', 'material-selection', 'exam-view', 'results-view', 'review-view', 'admin-portal'];
+      views.forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      clearInterval(timerInterval);
+    }
+
+    // Default sample questions (10 questions only)
+    const sampleQuestions = [
+      {
+        id: 1,
+        question: "Apa ibukota negara Indonesia?",
+        options: { A: "Jakarta", B: "Surabaya", C: "Bandung", D: "Medan", E: "Yogyakarta" },
+        answer: "A",
+        explanation: "Jakarta adalah ibukota negara Indonesia sejak kemerdekaan tahun 1945. Kota ini terletak di pulau Jawa bagian barat."
+      },
+      {
+        id: 2,
+        question: "Siapakah presiden pertama Republik Indonesia?",
+        options: { A: "Soekarno", B: "Soeharto", C: "B.J. Habibie", D: "Megawati", E: "Joko Widodo" },
+        answer: "A",
+        explanation: "Ir. Soekarno adalah presiden pertama Indonesia yang memproklamasikan kemerdekaan pada 17 Agustus 1945."
+      },
+      {
+        id: 3,
+        question: "Planet apakah yang paling dekat dengan Matahari?",
+        options: { A: "Venus", B: "Mars", C: "Merkurius", D: "Jupiter", E: "Saturnus" },
+        answer: "C",
+        explanation: "Merkurius adalah planet terdekat dengan Matahari dalam tata surya kita, dengan jarak rata-rata sekitar 57,9 juta kilometer."
+      },
+      {
+        id: 4,
+        question: "Berapakah hasil dari 15 × 8?",
+        options: { A: "100", B: "110", C: "120", D: "130", E: "140" },
+        answer: "C",
+        explanation: "15 × 8 = 120. Perhitungan dapat dilakukan dengan cara 15 × 8 = (10 × 8) + (5 × 8) = 80 + 40 = 120."
+      },
+      {
+        id: 5,
+        question: "Organ tubuh manusia yang berfungsi memompa darah adalah?",
+        options: { A: "Paru-paru", B: "Hati", C: "Jantung", D: "Ginjal", E: "Lambung" },
+        answer: "C",
+        explanation: "Jantung adalah organ yang berfungsi memompa darah ke seluruh tubuh melalui sistem peredaran darah."
+      },
+      {
+        id: 6,
+        question: "Bahasa pemrograman yang dikembangkan oleh Guido van Rossum adalah?",
+        options: { A: "Java", B: "C++", C: "Python", D: "Ruby", E: "PHP" },
+        answer: "C",
+        explanation: "Python dikembangkan oleh Guido van Rossum dan pertama kali dirilis pada tahun 1991."
+      },
+      {
+        id: 7,
+        question: "Gunung tertinggi di dunia adalah?",
+        options: { A: "Gunung Kilimanjaro", B: "Gunung Everest", C: "Gunung Fuji", D: "Gunung McKinley", E: "Gunung Elbrus" },
+        answer: "B",
+        explanation: "Gunung Everest adalah gunung tertinggi di dunia dengan ketinggian 8.849 meter di atas permukaan laut."
+      },
+      {
+        id: 8,
+        question: "Tahun berapakah Indonesia merdeka?",
+        options: { A: "1943", B: "1944", C: "1945", D: "1946", E: "1947" },
+        answer: "C",
+        explanation: "Indonesia merdeka pada tanggal 17 Agustus 1945, yang diproklamasikan oleh Soekarno dan Mohammad Hatta."
+      },
+      {
+        id: 9,
+        question: "Rumus kimia air adalah?",
+        options: { A: "H2O", B: "CO2", C: "NaCl", D: "O2", E: "H2SO4" },
+        answer: "A",
+        explanation: "H2O adalah rumus kimia air, terdiri dari 2 atom hidrogen dan 1 atom oksigen."
+      },
+      {
+        id: 10,
+        question: "Benua terluas di dunia adalah?",
+        options: { A: "Afrika", B: "Amerika Utara", C: "Eropa", D: "Asia", E: "Australia" },
+        answer: "D",
+        explanation: "Asia adalah benua terluas di dunia dengan luas sekitar 44,58 juta km², mencakup sekitar 30% dari total luas daratan bumi."
+      }
+    ];
+
+    // ==================== Google Sheets API Functions ====================
+    
+    // Show loading indicator
+    function showLoading(show = true) {
+      const loadingEl = document.getElementById('loading-indicator');
+      if (loadingEl) {
+        loadingEl.style.display = show ? 'flex' : 'none';
+      }
+    }
+    
+    // Call Google Apps Script function
+    async function callGoogleScript(action, data = {}) {
+      try {
+        showLoading(true);
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            action: action,
+            data: JSON.stringify(data)
+          })
+        });
+        
+        const result = await response.json();
+        showLoading(false);
+        return result;
+      } catch (error) {
+        showLoading(false);
+        console.error('Error calling Google Script:', error);
+        showToast('Gagal terhubung ke server', 'error');
+        return { success: false, error: error.message };
+      }
+    }
+    
+    // Load all data from Google Sheets
+    async function loadAllData() {
+      showLoading(true);
+      
+      try {
+        console.log('🔄 Loading data from Google Sheets...');
+        console.log('📍 URL:', GOOGLE_SCRIPT_URL);
+        
+        // Load materials
+        const materialsUrl = `${GOOGLE_SCRIPT_URL}?action=getMaterials&timestamp=${Date.now()}`;
+        console.log('📥 Fetching materials from:', materialsUrl);
+        
+        const materialsResponse = await fetch(materialsUrl, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        
+        console.log('📊 Materials Response Status:', materialsResponse.status);
+        const materialsText = await materialsResponse.text();
+        console.log('📄 Materials Raw Response:', materialsText.substring(0, 200));
+        
+        let materialsData = [];
+        try {
+          materialsData = JSON.parse(materialsText);
+        } catch (e) {
+          console.error('❌ Failed to parse materials JSON:', e);
+          materialsData = [];
+        }
+        
+        materials = Array.isArray(materialsData) ? materialsData : [];
+        console.log('✅ Materials loaded:', materials.length);
+        
+        // Load exam results
+        const resultsUrl = `${GOOGLE_SCRIPT_URL}?action=getExamResults&timestamp=${Date.now()}`;
+        console.log('📥 Fetching results from:', resultsUrl);
+        
+        const resultsResponse = await fetch(resultsUrl, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        
+        console.log('📊 Results Response Status:', resultsResponse.status);
+        const resultsText = await resultsResponse.text();
+        console.log('📄 Results Raw Response:', resultsText.substring(0, 200));
+        
+        let resultsData = [];
+        try {
+          resultsData = JSON.parse(resultsText);
+        } catch (e) {
+          console.error('❌ Failed to parse results JSON:', e);
+          resultsData = [];
+        }
+        
+        examResults = Array.isArray(resultsData) ? resultsData : [];
+        console.log('✅ Results loaded:', examResults.length);
+        
+        // Update UI
+        renderMaterialsList();
+        renderMaterialsGrid();
+        renderScoresTable();
+        
+        showLoading(false);
+        
+        if (materials.length === 0 && examResults.length === 0) {
+          showToast('✅ Koneksi berhasil! Belum ada data.', 'success');
+        } else {
+          showToast(`✅ Data dimuat: ${materials.length} materi, ${examResults.length} hasil`, 'success');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error loading data:', error);
+        console.error('Error details:', error.message);
+        showToast('❌ Gagal memuat data: ' + error.message, 'error');
+        showLoading(false);
+        
+        // Still render empty UI
+        renderMaterialsList();
+        renderMaterialsGrid();
+        renderScoresTable();
+      }
+    }
+    
+    // Load questions for a specific material
+    async function loadMaterialQuestions(materialId) {
+      try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getQuestionsByMaterial&materialId=${materialId}`);
+        const data = await response.json();
+        return data || [];
+      } catch (error) {
+        console.error('Error loading questions:', error);
+        return [];
+      }
+    }
+
+    async function initApp() {
+      applyConfig();
+      loadLocalProgress();
+      
+      // Load initial data
+      await loadAllData();
+    }
+
+    function applyConfig() {
+      const mainTitle = document.getElementById('main-title');
+      const welcomeText = document.getElementById('welcome-text');
+      const examHeaderTitle = document.getElementById('exam-header-title');
+      
+      if (mainTitle) mainTitle.textContent = config.app_title || defaultConfig.app_title;
+      if (welcomeText) welcomeText.textContent = config.welcome_message || defaultConfig.welcome_message;
+      if (examHeaderTitle) examHeaderTitle.textContent = config.exam_title || defaultConfig.exam_title;
+      
+      document.body.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      document.body.style.color = config.text_color || defaultConfig.text_color;
+    }
+
+    // ==================== Navigation ====================
+    async function verifyAdminPassword(event) {
+      event.preventDefault();
+      const password = document.getElementById('admin-password').value;
+      
+      if (password === 'JELLY') {
+        await showAdminPortal();
+        document.getElementById('admin-password').value = '';
+      } else {
+        showToast('Password salah! Silakan coba lagi.', 'error');
+        document.getElementById('admin-password').value = '';
+      }
+    }
+
+    async function showAdminPortal() {
+      hideAllViews();
+      document.getElementById('admin-portal').classList.remove('hidden');
+      showAdminTab('materials');
+      await loadAllData();
+    }
+
+    // ==================== Material Functions ====================
+    async function continueToMaterialSelection(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('student-name');
+      const classInput = document.getElementById('student-class');
+      currentStudent = nameInput.value.trim();
+      currentClass = classInput.value;
+      
+      if (!currentStudent) {
+        showToast('Silakan masukkan nama Anda', 'error');
+        return;
+      }
+      
+      if (!currentClass) {
+        showToast('Silakan pilih kelas Anda', 'error');
+        return;
+      }
+
+      hideAllViews();
+      document.getElementById('material-selection').classList.remove('hidden');
+      document.getElementById('material-student-name').textContent = `${currentStudent} - ${currentClass}`;
+      
+      // Load materials from Google Sheets
+      await loadAllData();
+    }
+
+    function renderMaterialsGrid() {
+      const grid = document.getElementById('materials-grid');
+      const noMaterials = document.getElementById('no-materials');
+      
+      if (materials.length === 0) {
+        grid.innerHTML = '';
+        noMaterials.classList.remove('hidden');
+        return;
+      }
+      
+      noMaterials.classList.add('hidden');
+      
+      const now = new Date();
+      
+      grid.innerHTML = materials.map(material => {
+        const unlockDate = new Date(material.unlock_date);
+        const deadlineDate = material.deadline_date ? new Date(material.deadline_date) : null;
+        const isUnlocked = now >= unlockDate && material.is_active === true;
+        const isPastDeadline = deadlineDate && now > deadlineDate;
+        const canAccess = isUnlocked && !isPastDeadline;
+        const questionCount = material.question_count || 0;
+        const duration = material.duration_minutes || 30;
+        
+        return `
+          <button onclick='${canAccess ? `selectMaterial("${material.material_id}")` : ''}' class="bg-surface rounded-2xl p-6 shadow-sm border border-slate-100 text-left transition-all ${canAccess ? 'hover:shadow-lg hover:border-primary-200 cursor-pointer' : 'opacity-60 cursor-not-allowed'} slide-up">
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center ${canAccess ? 'bg-primary-100' : 'bg-slate-100'}">
+                <svg class="w-6 h-6 ${canAccess ? 'text-primary-600' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+              </div>
+              ${canAccess ? `
+                <span class="px-3 py-1 bg-success-100 text-success-700 text-xs font-medium rounded-full">Tersedia</span>
+              ` : isPastDeadline ? `
+                <span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">Berakhir</span>
+              ` : `
+                <span class="px-3 py-1 bg-slate-100 text-slate-500 text-xs font-medium rounded-full flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                  Terkunci
+                </span>
+              `}
+            </div>
+            <h3 class="font-bold text-slate-800 text-lg mb-2">${material.material_name}</h3>
+            <p class="text-slate-500 text-sm mb-4">${material.material_description || 'Tidak ada deskripsi'}</p>
+            <div class="space-y-2 text-xs text-slate-400">
+              <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  ${questionCount} Soal
+                </span>
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  ${duration} menit
+                </span>
+              </div>
+              <div class="flex items-center gap-1 text-xs ${canAccess ? 'text-success-600' : isPastDeadline ? 'text-red-600' : 'text-slate-400'}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                ${canAccess ? 'Buka sekarang' : isPastDeadline ? 'Berakhir: ' + deadlineDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Buka: ' + unlockDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </div>
+              ${deadlineDate && !isPastDeadline ? `
+                <div class="flex items-center gap-1 text-xs text-amber-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  Deadline: ${deadlineDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              ` : ''}
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    async function selectMaterial(materialId) {
+      selectedMaterial = materials.find(m => m.material_id === materialId);
+      if (!selectedMaterial) {
+        showToast('Materi tidak ditemukan', 'error');
+        return;
+      }
+      
+      // Load questions for this material from Google Sheets
+      showLoading(true);
+      questions = await loadMaterialQuestions(materialId);
+      showLoading(false);
+      
+      if (questions.length === 0) {
+        showToast('Tidak ada soal untuk materi ini', 'error');
+        return;
+      }
+      
+      startExam();
+    }
+
+    async function addMaterial(event) {
+      event.preventDefault();
+      
+      if (materials.length >= 50) {
+        showToast('Maksimal 50 materi sudah tercapai', 'error');
+        return;
+      }
+      
+      // Validate parsed questions
+      if (parsedQuestions.length === 0) {
+        showToast('Silakan parse soal terlebih dahulu', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('add-material-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-pulse">Menyimpan...</span>';
+      
+      const name = document.getElementById('material-name').value.trim();
+      const unlockDate = document.getElementById('material-unlock-date').value;
+      const deadline = document.getElementById('material-deadline').value;
+      const duration = parseInt(document.getElementById('material-duration').value);
+      const description = document.getElementById('material-description').value.trim();
+      const isActive = document.getElementById('material-active').checked;
+      
+      // Validate dates
+      const unlockDateTime = new Date(unlockDate);
+      const deadlineDateTime = new Date(deadline);
+      
+      if (deadlineDateTime <= unlockDateTime) {
+        showToast('Deadline harus setelah tanggal buka', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Tambah Materi dengan Soal';
+        return;
+      }
+      
+      const materialId = `material_${Date.now()}`;
+      
+      // Send to Google Sheets
+      const materialData = {
+        material_id: materialId,
+        material_name: name,
+        material_description: description,
+        unlock_date: unlockDateTime.toISOString(),
+        deadline_date: deadlineDateTime.toISOString(),
+        duration_minutes: duration,
+        is_active: isActive
+      };
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'createMaterial',
+          materialData: JSON.stringify(materialData),
+          questions: JSON.stringify(parsedQuestions)
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        showToast('Gagal menambahkan materi', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Tambah Materi dengan Soal';
+        return;
+      }
+      
+      // Reset form
+      document.getElementById('material-name').value = '';
+      document.getElementById('material-unlock-date').value = '';
+      document.getElementById('material-deadline').value = '';
+      document.getElementById('material-duration').value = '30';
+      document.getElementById('material-description').value = '';
+      document.getElementById('material-active').checked = true;
+      document.getElementById('question-input').value = '';
+      document.getElementById('parsed-preview-form').classList.add('hidden');
+      parsedQuestions = [];
+      
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Tambah Materi dengan Soal';
+      
+      showToast(`Materi dengan ${parsedQuestions.length} soal berhasil ditambahkan`, 'success');
+      
+      // Reload data
+      await loadAllData();
+    }
+
+    function renderMaterialsList() {
+      const list = document.getElementById('materials-list');
+      const noMaterials = document.getElementById('no-materials-admin');
+      
+      if (materials.length === 0) {
+        list.innerHTML = '';
+        noMaterials.classList.remove('hidden');
+        return;
+      }
+      
+      noMaterials.classList.add('hidden');
+      
+      const now = new Date();
+      
+      list.innerHTML = materials.map(material => {
+        const unlockDate = new Date(material.unlock_date);
+        const deadlineDate = material.deadline_date ? new Date(material.deadline_date) : null;
+        const isUnlocked = now >= unlockDate;
+        const isPastDeadline = deadlineDate && now > deadlineDate;
+        const questionCount = material.question_count || 0;
+        const duration = material.duration_minutes || 30;
+        
+        return `
+          <div class="p-6 hover:bg-slate-50 transition-colors">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <h3 class="font-bold text-slate-800">${material.material_name}</h3>
+                  ${material.is_active ? `
+                    <span class="px-2 py-1 bg-success-100 text-success-700 text-xs font-medium rounded">Aktif</span>
+                  ` : `
+                    <span class="px-2 py-1 bg-slate-100 text-slate-500 text-xs font-medium rounded">Nonaktif</span>
+                  `}
+                  ${isUnlocked ? `
+                    <span class="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded">Terbuka</span>
+                  ` : `
+                    <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded">Terkunci</span>
+                  `}
+                  ${isPastDeadline ? `
+                    <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded">Berakhir</span>
+                  ` : ''}
+                </div>
+                <p class="text-slate-500 text-sm mb-3">${material.material_description || 'Tidak ada deskripsi'}</p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-400">
+                  <span>📝 ${questionCount} soal</span>
+                  <span>⏱️ ${duration} menit</span>
+                  <span>���� Buka: ${unlockDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  ${deadlineDate ? `<span class="${isPastDeadline ? 'text-red-500' : 'text-amber-600'}">⏰ Deadline: ${deadlineDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>` : ''}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick='editMaterialQuestions("${material.material_id}")' class="p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Soal">
+                  <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </button>
+                <button onclick='toggleMaterialActive("${material.material_id}", ${!material.is_active})' class="p-2 hover:bg-slate-100 rounded-lg transition-colors" title="${material.is_active ? 'Nonaktifkan' : 'Aktifkan'}">
+                  <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${material.is_active ? 'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21' : 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'}"/>
+                  </svg>
+                </button>
+                <button onclick='deleteMaterial("${material.material_id}")' class="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                  <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleMaterialActive(materialId, newState) {
+      const material = materials.find(m => m.material_id === materialId);
+      if (!material) return;
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'updateMaterial',
+          materialId: materialId,
+          updates: JSON.stringify({ is_active: newState })
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        showToast('Gagal mengubah status', 'error');
+        return;
+      }
+      
+      showToast(newState ? 'Materi diaktifkan' : 'Materi dinonaktifkan', 'success');
+      
+      // Reload data
+      await loadAllData();
+    }
+
+
+
+    async function deleteMaterial(materialId) {
+      const material = materials.find(m => m.material_id === materialId);
+      if (!material) return;
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'deleteMaterial',
+          materialId: materialId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        showToast('Gagal menghapus materi', 'error');
+        return;
+      }
+      
+      showToast('Materi berhasil dihapus', 'success');
+      
+      // Reload data
+      await loadAllData();
+    }
+
+    // ==================== Edit Questions Functions ====================
+    async function editMaterialQuestions(materialId) {
+      const material = materials.find(m => m.material_id === materialId);
+      if (!material) {
+        showToast('Materi tidak ditemukan', 'error');
+        return;
+      }
+      
+      editingMaterialId = materialId;
+      document.getElementById('edit-material-name').textContent = material.material_name;
+      document.getElementById('edit-questions-modal').classList.remove('hidden');
+      
+      // Load current questions from Google Sheets
+      await loadCurrentQuestions();
+    }
+
+    async function loadCurrentQuestions() {
+      const questions = await loadMaterialQuestions(editingMaterialId);
+      
+      if (questions.length === 0) {
+        document.getElementById('edit-question-input').value = '';
+        showToast('Tidak ada soal untuk ditampilkan', 'info');
+        return;
+      }
+      
+      try {
+        // Convert questions to text format
+        const textFormat = questions.map((q, index) => {
+          let text = `${index + 1}. ${q.question}\n`;
+          
+          Object.entries(q.options).forEach(([key, value]) => {
+            if (key === q.answer) {
+              text += `${key}. ${value}*\n`;
+            } else {
+              text += `${key}. ${value}\n`;
+            }
+          });
+          
+          if (q.explanation) {
+            text += `Penjelasan: ${q.explanation}\n`;
+          }
+          
+          return text;
+        }).join('\n');
+        
+        document.getElementById('edit-question-input').value = textFormat;
+        showToast(`${questions.length} soal berhasil dimuat`, 'success');
+      } catch (e) {
+        showToast('Gagal memuat soal', 'error');
+      }
+    }
+
+    function parseEditedQuestions() {
+      const input = document.getElementById('edit-question-input').value.trim();
+      if (!input) {
+        showToast('Silakan masukkan soal terlebih dahulu', 'error');
+        return;
+      }
+
+      editedQuestions = [];
+      
+      // Split by question numbers
+      const questionBlocks = input.split(/(?=^\d+\.\s)/m).filter(block => block.trim());
+      
+      questionBlocks.forEach((block, index) => {
+        const lines = block.trim().split('\n').map(l => l.trim()).filter(l => l);
+        
+        if (lines.length < 3) return;
+        
+        // Parse question text
+        const questionMatch = lines[0].match(/^\d+\.\s*(.+)/);
+        if (!questionMatch) return;
+        
+        const questionText = questionMatch[1];
+        const options = {};
+        let correctAnswer = '';
+        let explanation = '';
+        
+        // Parse options and find correct answer
+        lines.slice(1).forEach(line => {
+          // Check for option with asterisk (correct answer marker)
+          const optionWithAsterisk = line.match(/^([A-E])\.\s*(.+)\*\s*$/);
+          if (optionWithAsterisk) {
+            options[optionWithAsterisk[1]] = optionWithAsterisk[2].trim();
+            correctAnswer = optionWithAsterisk[1];
+            return;
+          }
+          
+          // Check for regular option
+          const optionMatch = line.match(/^([A-E])\.\s*(.+)/);
+          if (optionMatch) {
+            options[optionMatch[1]] = optionMatch[2].trim();
+            return;
+          }
+          
+          // Check for answer key
+          const answerMatch = line.match(/^(?:Jawaban|Kunci|Key|Answer):\s*([A-E])/i);
+          if (answerMatch) {
+            correctAnswer = answerMatch[1];
+            return;
+          }
+          
+          // Check for explanation
+          const explanationMatch = line.match(/^(?:Penjelasan|Pembahasan|Explanation):\s*(.+)/i);
+          if (explanationMatch) {
+            explanation = explanationMatch[1];
+            return;
+          }
+        });
+        
+        if (questionText && Object.keys(options).length >= 2 && correctAnswer) {
+          editedQuestions.push({
+            id: index + 1,
+            question: questionText,
+            options,
+            answer: correctAnswer,
+            explanation: explanation || 'Tidak ada penjelasan.'
+          });
+        }
+      });
+      
+      if (editedQuestions.length === 0) {
+        showToast('Tidak dapat mendeteksi soal. Periksa format input.', 'error');
+        return;
+      }
+      
+      // Show preview
+      document.getElementById('parsed-preview-edit').classList.remove('hidden');
+      document.getElementById('parsed-count-edit').textContent = `${editedQuestions.length} soal terdeteksi`;
+      
+      const previewList = document.getElementById('preview-list-edit');
+      previewList.innerHTML = editedQuestions.map((q, i) => `
+        <div class="p-4 hover:bg-slate-100">
+          <div class="flex items-start gap-3">
+            <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center font-semibold text-sm">${i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-slate-800 mb-2">${q.question}</p>
+              <div class="flex flex-wrap gap-2 text-sm">
+                ${Object.entries(q.options).map(([key, value]) => `
+                  <span class="px-2 py-1 rounded ${key === q.answer ? 'bg-success-100 text-success-700' : 'bg-slate-100 text-slate-600'}">
+                    ${key}. ${value.substring(0, 20)}${value.length > 20 ? '...' : ''} ${key === q.answer ? '✓' : ''}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      showToast(`${editedQuestions.length} soal berhasil diparse`, 'success');
+    }
+
+    async function saveEditedQuestions() {
+      if (editedQuestions.length === 0) {
+        showToast('Silakan parse soal terlebih dahulu', 'error');
+        return;
+      }
+      
+      const material = materials.find(m => m.material_id === editingMaterialId);
+      if (!material) {
+        showToast('Materi tidak ditemukan', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('save-edited-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-pulse">Menyimpan...</span>';
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'updateMaterialQuestions',
+          materialId: editingMaterialId,
+          questions: JSON.stringify(editedQuestions)
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        showToast('Gagal menyimpan perubahan', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Perubahan';
+        return;
+      }
+      
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Perubahan';
+      
+      showToast(`${editedQuestions.length} soal berhasil disimpan`, 'success');
+      closeEditModal();
+      
+      // Reload data
+      await loadAllData();
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-questions-modal').classList.add('hidden');
+      document.getElementById('edit-question-input').value = '';
+      document.getElementById('parsed-preview-edit').classList.add('hidden');
+      editingMaterialId = null;
+      editedQuestions = [];
+    }
+
+    // ==================== Exam Functions ====================
+    function startExam() {
+      if (!currentStudent || !currentClass) {
+        showToast('Data siswa tidak lengkap', 'error');
+        return;
+      }
+
+      // Reset exam state
+      currentQuestionIndex = 0;
+      studentAnswers = {};
+      examStartTime = Date.now();
+      
+      // Reset tab security state
+      isBlocked = false;
+      blockEndTime = null;
+      tabViolationCount = 0;
+      clearInterval(blockTimerInterval);
+      document.getElementById('tab-block-overlay').classList.add('hidden');
+      
+      // Set exam duration from material
+      if (selectedMaterial && selectedMaterial.duration_minutes) {
+        examDuration = selectedMaterial.duration_minutes * 60; // Convert to seconds
+      } else {
+        examDuration = 30 * 60; // Default 30 minutes
+      }
+      
+      hideAllViews();
+      document.getElementById('exam-view').classList.remove('hidden');
+      document.getElementById('student-name-display').textContent = `${currentStudent} - ${currentClass}`;
+      
+      if (selectedMaterial) {
+        document.getElementById('exam-header-title').textContent = selectedMaterial.material_name;
+      }
+      
+      renderQuestion();
+      renderNavigation();
+      startTimer();
+      startTabMonitoring();
+      saveLocalProgress();
+    }
+    
+    // ==================== Tab Monitoring Functions ====================
+    function startTabMonitoring() {
+      // Listen for visibility change (tab switch, minimize)
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Listen for blur event (window loses focus)
+      window.addEventListener('blur', handleWindowBlur);
+      
+      // Listen for focus event (window gains focus)
+      window.addEventListener('focus', handleWindowFocus);
+    }
+    
+    function stopTabMonitoring() {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+    }
+    
+    function handleVisibilityChange() {
+      // Only monitor during active exam (not in results or review)
+      const examView = document.getElementById('exam-view');
+      if (examView.classList.contains('hidden') || isBlocked) {
+        return;
+      }
+      
+      if (document.hidden) {
+        // User left the tab
+        blockExam();
+      }
+    }
+    
+    function handleWindowBlur() {
+      // Only monitor during active exam
+      const examView = document.getElementById('exam-view');
+      if (examView.classList.contains('hidden') || isBlocked) {
+        return;
+      }
+      
+      // User switched to another window/application
+      setTimeout(() => {
+        if (!document.hasFocus() && !document.hidden) {
+          blockExam();
+        }
+      }, 100);
+    }
+    
+    function handleWindowFocus() {
+      // Window regained focus - do nothing, block continues if active
+    }
+    
+    function blockExam() {
+      if (isBlocked) return; // Already blocked
+      
+      isBlocked = true;
+      tabViolationCount++;
+      blockEndTime = Date.now() + (2 * 60 * 1000); // 2 minutes from now
+      
+      // Show block overlay
+      document.getElementById('tab-block-overlay').classList.remove('hidden');
+      document.getElementById('violation-count').textContent = tabViolationCount;
+      
+      // Start countdown timer
+      updateBlockCountdown();
+      blockTimerInterval = setInterval(updateBlockCountdown, 1000);
+      
+      showToast(`Pelanggaran ke-${tabViolationCount}: Kuis diblokir 2 menit!`, 'error');
+    }
+    
+    function updateBlockCountdown() {
+      const remaining = Math.max(0, Math.floor((blockEndTime - Date.now()) / 1000));
+      
+      if (remaining <= 0) {
+        unblockExam();
+        return;
+      }
+      
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      
+      document.getElementById('block-countdown').textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    function unblockExam() {
+      isBlocked = false;
+      blockEndTime = null;
+      clearInterval(blockTimerInterval);
+      
+      // Hide block overlay
+      document.getElementById('tab-block-overlay').classList.add('hidden');
+      
+      showToast('Kuis telah dibuka kembali. Jangan buka tab lain!', 'success');
+    }
+
+    function renderQuestion() {
+      if (questions.length === 0) return;
+      
+      const q = questions[currentQuestionIndex];
+      const container = document.getElementById('question-container');
+      const answered = studentAnswers[currentQuestionIndex];
+      
+      container.innerHTML = `
+        <div class="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden fade-in">
+          <div class="px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+            <span class="text-sm opacity-90">Soal ${currentQuestionIndex + 1} dari ${questions.length}</span>
+          </div>
+          <div class="p-6">
+            <p class="text-lg font-medium text-slate-800 mb-6 leading-relaxed">${q.question}</p>
+            <div class="space-y-3 mb-6">
+              ${Object.entries(q.options).map(([key, value]) => `
+                <button onclick="selectAnswer('${key}')" class="option-btn w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-3 ${answered === key ? 'selected border-primary-500 bg-primary-50' : 'border-slate-200 hover:border-primary-300'}">
+                  <span class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-sm ${answered === key ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-600'}">${key}</span>
+                  <span class="text-slate-700 pt-1">${value}</span>
+                </button>
+              `).join('')}
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="flex items-center justify-between gap-4 pt-4 border-t border-slate-100">
+              <button onclick="prevQuestion()" id="prev-btn-question" class="flex items-center gap-2 px-6 py-3 border-2 border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" ${currentQuestionIndex === 0 ? 'disabled' : ''}>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Sebelumnya
+              </button>
+              <button onclick="nextQuestion()" id="next-btn-question" class="flex items-center gap-2 px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" ${currentQuestionIndex === questions.length - 1 ? 'disabled' : ''}>
+                Selanjutnya
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      updateNavButtons();
+    }
+
+    function selectAnswer(answer) {
+      studentAnswers[currentQuestionIndex] = answer;
+      renderQuestion();
+      renderNavigation();
+      saveLocalProgress();
+    }
+
+    function renderNavigation() {
+      const desktopNav = document.getElementById('nav-grid-desktop');
+      const mobileNav = document.getElementById('nav-grid-mobile');
+      const progressInfo = document.getElementById('progress-info');
+      
+      const buttons = questions.map((_, index) => {
+        const isAnswered = studentAnswers[index] !== undefined;
+        const isCurrent = index === currentQuestionIndex;
+        
+        return `
+          <button onclick="goToQuestion(${index})" class="question-nav-btn w-full aspect-square rounded-lg font-semibold text-sm transition-all ${
+            isCurrent ? 'ring-2 ring-primary-500 ring-offset-2' : ''
+          } ${
+            isAnswered ? 'bg-success-500 text-white hover:bg-success-600' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+          }">
+            ${index + 1}
+          </button>
+        `;
+      }).join('');
+      
+      desktopNav.innerHTML = buttons;
+      mobileNav.innerHTML = buttons;
+      
+      const answeredCount = Object.keys(studentAnswers).length;
+      progressInfo.innerHTML = `
+        <p><strong>${answeredCount}</strong> dari <strong>${questions.length}</strong> soal dijawab</p>
+      `;
+    }
+
+    function goToQuestion(index) {
+      currentQuestionIndex = index;
+      renderQuestion();
+      renderNavigation();
+      hideMobileNav();
+    }
+
+    function prevQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+        renderNavigation();
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion();
+        renderNavigation();
+      }
+    }
+
+    function updateNavButtons() {
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      
+      prevBtn.disabled = currentQuestionIndex === 0;
+      nextBtn.disabled = currentQuestionIndex === questions.length - 1;
+    }
+
+    function showMobileNav() {
+      document.getElementById('mobile-nav-modal').classList.remove('hidden');
+    }
+
+    function hideMobileNav() {
+      document.getElementById('mobile-nav-modal').classList.add('hidden');
+    }
+
+    function startTimer() {
+      const timerEl = document.getElementById('timer');
+      
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - examStartTime) / 1000);
+        const remaining = examDuration - elapsed;
+        
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          showToast('Waktu kuis habis! Kuis akan dikumpulkan otomatis.', 'error');
+          setTimeout(() => {
+            finishExam();
+          }, 2000);
+          return;
+        }
+        
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        
+        // Change color when time is running out
+        if (remaining <= 300) { // 5 minutes
+          timerEl.className = 'bg-red-50 text-red-600 px-4 py-2 rounded-lg font-mono font-semibold flex items-center gap-2 animate-pulse';
+        } else if (remaining <= 600) { // 10 minutes
+          timerEl.className = 'bg-amber-50 text-amber-600 px-4 py-2 rounded-lg font-mono font-semibold flex items-center gap-2';
+        }
+        
+        timerEl.querySelector('span').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    function confirmFinishExam() {
+      const answeredCount = Object.keys(studentAnswers).length;
+      document.getElementById('confirm-message').textContent = `Anda telah menjawab ${answeredCount} dari ${questions.length} soal.`;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function hideConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    async function finishExam() {
+      hideConfirmModal();
+      clearInterval(timerInterval);
+      stopTabMonitoring(); // Stop monitoring when exam is finished
+      
+      // Calculate results
+      let correct = 0;
+      questions.forEach((q, index) => {
+        if (studentAnswers[index] === q.answer) {
+          correct++;
+        }
+      });
+      
+      const elapsed = Math.floor((Date.now() - examStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      const score = Math.round((correct / questions.length) * 100);
+      
+      examResultsData = {
+        student: currentStudent,
+        class: currentClass,
+        score,
+        correct,
+        wrong: questions.length - correct,
+        total: questions.length,
+        time: timeStr,
+        answers: { ...studentAnswers },
+        violations: tabViolationCount
+      };
+      
+      // Save to Google Sheets
+      const resultData = {
+        result_id: `result_${Date.now()}`,
+        material_id: selectedMaterial ? selectedMaterial.material_id : '',
+        material_name: selectedMaterial ? selectedMaterial.material_name : 'Kuis Digital',
+        student_name: currentStudent,
+        student_class: currentClass,
+        score: score,
+        correct_count: correct,
+        wrong_count: questions.length - correct,
+        total_questions: questions.length,
+        time_taken: timeStr,
+        tab_violations: tabViolationCount,
+        answers_json: JSON.stringify(studentAnswers),
+        completed_at: new Date().toISOString()
+      };
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          action: 'saveExamResult',
+          resultData: JSON.stringify(resultData)
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        showToast('Gagal menyimpan hasil, tapi nilai Anda tetap ditampilkan', 'error');
+      }
+      
+      clearLocalProgress();
+      showResults();
+    }
+
+    function showResults() {
+      hideAllViews();
+      document.getElementById('results-view').classList.remove('hidden');
+      
+      const iconContainer = document.getElementById('result-icon');
+      if (examResultsData.score >= 70) {
+        iconContainer.className = 'w-24 h-24 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-6';
+        iconContainer.innerHTML = `
+          <svg class="w-12 h-12 text-success-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        `;
+      } else {
+        iconContainer.className = 'w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6';
+        iconContainer.innerHTML = `
+          <svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        `;
+      }
+      
+      document.getElementById('result-student-name').textContent = examResultsData.student;
+      document.getElementById('result-score').textContent = examResultsData.score;
+      document.getElementById('result-correct').textContent = examResultsData.correct;
+      document.getElementById('result-wrong').textContent = examResultsData.wrong;
+      document.getElementById('result-time').textContent = examResultsData.time;
+      
+      // Show violation info if any
+      const violationInfo = document.getElementById('violation-info');
+      const resultViolations = document.getElementById('result-violations');
+      if (examResultsData.violations && examResultsData.violations > 0) {
+        violationInfo.classList.remove('hidden');
+        resultViolations.textContent = examResultsData.violations;
+      } else {
+        violationInfo.classList.add('hidden');
+      }
+    }
+
+    // ==================== Review Functions ====================
+    function showReview() {
+      hideAllViews();
+      document.getElementById('review-view').classList.remove('hidden');
+      reviewIndex = 0;
+      renderReviewQuestion();
+    }
+
+    function renderReviewQuestion() {
+      const q = questions[reviewIndex];
+      const userAnswer = examResultsData.answers[reviewIndex];
+      const isCorrect = userAnswer === q.answer;
+      
+      document.getElementById('review-progress').textContent = `Soal ${reviewIndex + 1} dari ${questions.length}`;
+      document.getElementById('review-counter').textContent = `${reviewIndex + 1}/${questions.length}`;
+      
+      const container = document.getElementById('review-container');
+      container.innerHTML = `
+        <div class="bg-surface rounded-2xl shadow-sm border border-slate-100 overflow-hidden fade-in">
+          <div class="px-6 py-4 ${isCorrect ? 'bg-success-500' : 'bg-red-500'} text-white flex items-center justify-between">
+            <span class="font-medium">Soal ${reviewIndex + 1}</span>
+            <span class="flex items-center gap-2">
+              ${isCorrect ? `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Benar
+              ` : `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Salah
+              `}
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-lg font-medium text-slate-800 mb-6 leading-relaxed">${q.question}</p>
+            <div class="space-y-3 mb-6">
+              ${Object.entries(q.options).map(([key, value]) => {
+                let classes = 'border-slate-200';
+                let labelClasses = 'bg-slate-100 text-slate-600';
+                
+                if (key === q.answer) {
+                  classes = 'border-success-500 bg-success-50';
+                  labelClasses = 'bg-success-500 text-white';
+                } else if (key === userAnswer && key !== q.answer) {
+                  classes = 'border-red-500 bg-red-50';
+                  labelClasses = 'bg-red-500 text-white';
+                }
+                
+                return `
+                  <div class="w-full text-left p-4 rounded-xl border-2 flex items-start gap-3 ${classes}">
+                    <span class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-sm ${labelClasses}">${key}</span>
+                    <span class="text-slate-700 pt-1">${value}</span>
+                    ${key === q.answer ? '<span class="ml-auto text-success-600 font-medium text-sm">✓ Jawaban Benar</span>' : ''}
+                    ${key === userAnswer && key !== q.answer ? '<span class="ml-auto text-red-500 font-medium text-sm">Jawaban Anda</span>' : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            
+            ${!userAnswer ? `
+              <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 mb-4">
+                <strong>Tidak dijawab</strong>
+              </div>
+            ` : ''}
+            
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <h4 class="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Penjelasan
+              </h4>
+              <p class="text-blue-700 leading-relaxed">${q.explanation}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('prev-review-btn').disabled = reviewIndex === 0;
+      document.getElementById('next-review-btn').disabled = reviewIndex === questions.length - 1;
+    }
+
+    function prevReview() {
+      if (reviewIndex > 0) {
+        reviewIndex--;
+        renderReviewQuestion();
+      }
+    }
+
+    function nextReview() {
+      if (reviewIndex < questions.length - 1) {
+        reviewIndex++;
+        renderReviewQuestion();
+      }
+    }
+
+    // ==================== Admin Functions ====================
+    function showAdminTab(tab) {
+      const tabs = ['materials', 'questions', 'scores'];
+      tabs.forEach(t => {
+        const tabElement = document.getElementById(`admin-${t}`);
+        const buttonElement = document.getElementById(`tab-${t}`);
+        if (tabElement) tabElement.classList.toggle('hidden', t !== tab);
+        if (buttonElement) {
+          buttonElement.classList.toggle('text-primary-600', t === tab);
+          buttonElement.classList.toggle('border-primary-500', t === tab);
+          buttonElement.classList.toggle('text-slate-500', t !== tab);
+          buttonElement.classList.toggle('border-transparent', t !== tab);
+        }
+      });
+    }
+
+    function loadSampleQuestionsInForm() {
+      const sampleText = `1. Apa ibukota negara Indonesia?
+A. Jakarta*
+B. Surabaya
+C. Bandung
+D. Medan
+E. Yogyakarta
+Penjelasan: Jakarta adalah ibukota negara Indonesia sejak kemerdekaan tahun 1945.
+
+2. Siapakah presiden pertama Republik Indonesia?
+A. Soekarno
+B. Soeharto
+C. B.J. Habibie
+D. Megawati
+E. Joko Widodo
+Jawaban: A
+Penjelasan: Ir. Soekarno adalah presiden pertama Indonesia.
+
+3. Planet apakah yang paling dekat dengan Matahari?
+A. Venus
+B. Mars
+C. Merkurius*
+D. Jupiter
+E. Saturnus
+Penjelasan: Merkurius adalah planet terdekat dengan Matahari.`;
+      
+      document.getElementById('question-input').value = sampleText;
+      showToast('Contoh soal berhasil dimuat', 'success');
+    }
+
+    function parseQuestionsInForm() {
+      const input = document.getElementById('question-input').value.trim();
+      if (!input) {
+        showToast('Silakan masukkan soal terlebih dahulu', 'error');
+        return;
+      }
+
+      parsedQuestions = [];
+      
+      // Split by question numbers
+      const questionBlocks = input.split(/(?=^\d+\.\s)/m).filter(block => block.trim());
+      
+      questionBlocks.forEach((block, index) => {
+        const lines = block.trim().split('\n').map(l => l.trim()).filter(l => l);
+        
+        if (lines.length < 3) return;
+        
+        // Parse question text
+        const questionMatch = lines[0].match(/^\d+\.\s*(.+)/);
+        if (!questionMatch) return;
+        
+        const questionText = questionMatch[1];
+        const options = {};
+        let correctAnswer = '';
+        let explanation = '';
+        
+        // Parse options and find correct answer
+        lines.slice(1).forEach(line => {
+          // Check for option with asterisk (correct answer marker)
+          const optionWithAsterisk = line.match(/^([A-E])\.\s*(.+)\*\s*$/);
+          if (optionWithAsterisk) {
+            options[optionWithAsterisk[1]] = optionWithAsterisk[2].trim();
+            correctAnswer = optionWithAsterisk[1];
+            return;
+          }
+          
+          // Check for regular option
+          const optionMatch = line.match(/^([A-E])\.\s*(.+)/);
+          if (optionMatch) {
+            options[optionMatch[1]] = optionMatch[2].trim();
+            return;
+          }
+          
+          // Check for answer key
+          const answerMatch = line.match(/^(?:Jawaban|Kunci|Key|Answer):\s*([A-E])/i);
+          if (answerMatch) {
+            correctAnswer = answerMatch[1];
+            return;
+          }
+          
+          // Check for explanation
+          const explanationMatch = line.match(/^(?:Penjelasan|Pembahasan|Explanation):\s*(.+)/i);
+          if (explanationMatch) {
+            explanation = explanationMatch[1];
+            return;
+          }
+        });
+        
+        if (questionText && Object.keys(options).length >= 2 && correctAnswer) {
+          parsedQuestions.push({
+            id: index + 1,
+            question: questionText,
+            options,
+            answer: correctAnswer,
+            explanation: explanation || 'Tidak ada penjelasan.'
+          });
+        }
+      });
+      
+      if (parsedQuestions.length === 0) {
+        showToast('Tidak dapat mendeteksi soal. Periksa format input.', 'error');
+        return;
+      }
+      
+      // Show preview
+      document.getElementById('parsed-preview-form').classList.remove('hidden');
+      document.getElementById('parsed-count-form').textContent = `${parsedQuestions.length} soal terdeteksi`;
+      
+      const previewList = document.getElementById('preview-list-form');
+      previewList.innerHTML = parsedQuestions.map((q, i) => `
+        <div class="p-4 hover:bg-slate-100">
+          <div class="flex items-start gap-3">
+            <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center font-semibold text-sm">${i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-slate-800 mb-2">${q.question}</p>
+              <div class="flex flex-wrap gap-2 text-sm">
+                ${Object.entries(q.options).map(([key, value]) => `
+                  <span class="px-2 py-1 rounded ${key === q.answer ? 'bg-success-100 text-success-700' : 'bg-slate-100 text-slate-600'}">
+                    ${key}. ${value.substring(0, 20)}${value.length > 20 ? '...' : ''} ${key === q.answer ? '✓' : ''}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      showToast(`${parsedQuestions.length} soal berhasil diparse`, 'success');
+    }
+
+    async function saveQuestions() {
+      if (parsedQuestions.length === 0) {
+        showToast('Tidak ada soal untuk disimpan', 'error');
+        return;
+      }
+      
+      if (!selectedMaterial) {
+        showToast('Pilih materi terlebih dahulu', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('save-questions-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-pulse">Menyimpan...</span>';
+      
+      questions = [...parsedQuestions];
+      
+      // Update material with new questions
+      if (window.dataSdk) {
+        const material = allData.find(m => m.material_id === selectedMaterial.material_id);
+        
+        if (material) {
+          material.question_data = JSON.stringify(questions);
+          const result = await window.dataSdk.update(material);
+          if (!result.isOk) {
+            showToast('Gagal menyimpan soal', 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Soal`;
+            return;
+          }
+        }
+      }
+      
+      btn.disabled = false;
+      btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan Soal`;
+      
+      showToast(`${questions.length} soal berhasil disimpan ke ${selectedMaterial.material_name}`, 'success');
+    }
+
+    function renderScoresTable() {
+      const tbody = document.getElementById('scores-table-body');
+      const noScores = document.getElementById('no-scores');
+      
+      if (examResults.length === 0) {
+        tbody.innerHTML = '';
+        noScores.classList.remove('hidden');
+        return;
+      }
+      
+      noScores.classList.add('hidden');
+      
+      tbody.innerHTML = examResults.map(result => {
+        const date = new Date(result.completed_at);
+        const formattedDate = date.toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4">
+              <div class="font-medium text-slate-800">${result.student_name} - ${result.student_class || ''}</div>
+              <div class="text-xs text-slate-400">${formattedDate}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                result.score >= 70 ? 'bg-success-100 text-success-800' : 
+                result.score >= 50 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+              }">
+                ${result.score}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-slate-500">${result.correct_count}/${result.total_questions}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-slate-500">${result.time_taken}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ==================== Download Excel Function ====================
+    async function downloadExcel() {
+      if (examResults.length === 0) {
+        showToast('Tidak ada data untuk didownload', 'error');
+        return;
+      }
+      
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=exportResultsToCSV`);
+        const csvContent = await response.text();
+        
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Hasil_Kuis_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showLoading(false);
+        showToast('File Excel berhasil didownload', 'success');
+      } catch (error) {
+        showLoading(false);
+        showToast('Gagal mendownload file', 'error');
+      }
+    }
+
+    // ==================== Utility Functions ====================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-success-500' : type === 'error' ? 'bg-red-500' : 'bg-slate-700';
+      
+      toast.className = `toast ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-sm`;
+      toast.innerHTML = `
+        ${type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : ''}
+        ${type === 'error' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' : ''}
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    function saveLocalProgress() {
+      const progress = {
+        student: currentStudent,
+        class: currentClass,
+        questionIndex: currentQuestionIndex,
+        answers: studentAnswers,
+        startTime: examStartTime
+      };
+      localStorage.setItem('kuis_progress', JSON.stringify(progress));
+    }
+
+    function loadLocalProgress() {
+      const saved = localStorage.getItem('kuis_progress');
+      if (saved) {
+        try {
+          const progress = JSON.parse(saved);
+          if (progress.student && progress.startTime) {
+            // Check if exam was started less than 30 minutes ago (exam duration)
+            if (Date.now() - progress.startTime < examDuration * 1000) {
+              currentStudent = progress.student;
+              currentClass = progress.class || '';
+              currentQuestionIndex = progress.questionIndex || 0;
+              studentAnswers = progress.answers || {};
+              examStartTime = progress.startTime;
+            } else {
+              clearLocalProgress();
+            }
+          }
+        } catch (e) {
+          clearLocalProgress();
+        }
+      }
+    }
+
+    function clearLocalProgress() {
+      localStorage.removeItem('kuis_progress');
+    }
+
+    function resetExamState() {
+      currentStudent = '';
+      currentClass = '';
+      currentQuestionIndex = 0;
+      studentAnswers = {};
+      examStartTime = null;
+      examResultsData = null;
+      clearInterval(timerInterval);
+      clearInterval(blockTimerInterval);
+      stopTabMonitoring();
+      isBlocked = false;
+      blockEndTime = null;
+      tabViolationCount = 0;
+      document.getElementById('tab-block-overlay').classList.add('hidden');
+      clearLocalProgress();
+    }
+
+    // Initialize app
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c38c40477caea7d',t:'MTc2OTM1NDU0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
