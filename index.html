@@ -694,9 +694,11 @@ Penjelasan: Soekarno adalah proklamator.</pre>
 
     // ==================== Navigation Functions (MUST BE AT TOP) ====================
     function showAdminLogin() {
-      hideAllViews();
-      document.getElementById('admin-login').classList.remove('hidden');
-    }
+  showBuffering(() => {
+    hideAllSections();
+    document.getElementById('admin-login').classList.remove('hidden');
+  });
+}
 
     function showPortalSelection() {
       hideAllViews();
@@ -705,9 +707,11 @@ Penjelasan: Soekarno adalah proklamator.</pre>
     }
 
     function showStudentLogin() {
-      hideAllViews();
-      document.getElementById('student-login').classList.remove('hidden');
-    }
+  showBuffering(() => {
+    hideAllSections();
+    document.getElementById('student-login').classList.remove('hidden');
+  });
+}
 
     function hideAllViews() {
       const views = ['portal-selection', 'admin-login', 'student-login', 'material-selection', 'exam-view', 'results-view', 'review-view', 'admin-portal'];
@@ -947,7 +951,7 @@ Penjelasan: Soekarno adalah proklamator.</pre>
       event.preventDefault();
       const password = document.getElementById('admin-password').value;
       
-      if (password === 'JELLY') {
+      if (password === 'sadtau') {
         await showAdminPortal();
         document.getElementById('admin-password').value = '';
       } else {
@@ -963,28 +967,38 @@ Penjelasan: Soekarno adalah proklamator.</pre>
       await loadAllData();
     }
 
-    // ==================== Material Functions ====================
-    async function continueToMaterialSelection(event) {
-      event.preventDefault();
-      const nameInput = document.getElementById('student-name');
-      const classInput = document.getElementById('student-class');
-      currentStudent = nameInput.value.trim();
-      currentClass = classInput.value;
-      
-      if (!currentStudent) {
+   // ==================== Material Functions ====================
+async function continueToMaterialSelection(event) {
+    event.preventDefault();
+    const nameInput = document.getElementById('student-name');
+    const classInput = document.getElementById('student-class');
+    
+    currentStudent = nameInput.value.trim();
+    currentClass = classInput.value;
+    
+    // 1. Validasi Input terlebih dahulu (Tanpa buffering)
+    if (!currentStudent) {
         showToast('Silakan masukkan nama Anda', 'error');
         return;
-      }
-      
-      if (!currentClass) {
+    }
+    
+    if (!currentClass) {
         showToast('Silakan pilih kelas Anda', 'error');
         return;
-      }
+    }
 
-      hideAllViews();
-      document.getElementById('material-selection').classList.remove('hidden');
-      document.getElementById('material-student-name').textContent = `${currentStudent} - ${currentClass}`;
-      
+    // 2. Panggil fungsi buffering untuk transisi ke halaman materi
+    showBuffering(() => {
+        hideAllViews();
+        document.getElementById('material-selection').classList.remove('hidden');
+        document.getElementById('material-student-name').textContent = `${currentStudent} - ${currentClass}`;
+        
+        // Panggil fungsi render materi di sini jika ada
+        // renderMaterials(); 
+        
+        showToast(`Selamat datang, ${currentStudent}!`, 'success');
+    }, 1000, "Mempersiapkan materi..."); // Durasi 1 detik dengan pesan custom
+}
       // Load materials from Google Sheets
       await loadAllData();
     }
@@ -1539,11 +1553,13 @@ Penjelasan: Soekarno adalah proklamator.</pre>
     }
 
     // ==================== Exam Functions ====================
-    function startExam() {
-      if (!currentStudent || !currentClass) {
-        showToast('Data siswa tidak lengkap', 'error');
-        return;
-      }
+    function startExam(materialId) {
+  showBuffering(() => {
+    // Kode inisialisasi kuis Anda di sini
+    document.getElementById('material-selection').classList.add('hidden');
+    document.getElementById('exam-view').classList.remove('hidden');
+  }, 1200); // Durasi agak lama untuk kesan "loading soal"
+}
 
       // Reset exam state
       currentQuestionIndex = 0;
@@ -1834,10 +1850,26 @@ Penjelasan: Soekarno adalah proklamator.</pre>
     }
 
     async function finishExam() {
-      hideConfirmModal();
-      clearInterval(timerInterval);
-      stopTabMonitoring(); // Stop monitoring when exam is finished
-      
+  // 1. Sembunyikan modal konfirmasi terlebih dahulu
+  hideConfirmModal();
+
+  // 2. Jalankan buffering sebelum masuk ke halaman skor
+  showBuffering(() => {
+    // Berhenti timer
+    clearInterval(timerInterval);
+
+    // Logika perhitungan skor (Pastikan variabel-variabel ini sesuai dengan script Anda)
+    calculateFinalScore(); 
+
+    // Pindah tampilan dari Exam View ke Results View
+    document.getElementById('exam-view').classList.add('hidden');
+    document.getElementById('results-view').classList.remove('hidden');
+    
+    // Tampilkan pesan sukses lewat toast (opsional)
+    showToast("Kuis berhasil diselesaikan!", "success");
+    
+  }, 1500); // Durasi 1.5 detik agar terlihat seperti sedang menghitung nilai
+}
       // Calculate results
       let correct = 0;
       questions.forEach((q, index) => {
@@ -1863,7 +1895,22 @@ Penjelasan: Soekarno adalah proklamator.</pre>
         answers: { ...studentAnswers },
         violations: tabViolationCount
       };
-      
+      // Fungsi untuk memicu efek buffering/loading
+function showBuffering(callback, duration = 800, message = "Memuat data...") {
+  const loader = document.getElementById('loading-indicator');
+  const loaderText = loader.querySelector('p');
+  
+  // Set teks pesan
+  loaderText.innerText = message;
+  loader.classList.remove('hidden');
+  
+  setTimeout(() => {
+    if (callback) callback();
+    setTimeout(() => {
+      loader.classList.add('hidden');
+    }, 300);
+  }, duration);
+}
       // Save to Google Sheets
       const resultData = {
         result_id: `result_${Date.now()}`,
@@ -1941,12 +1988,13 @@ Penjelasan: Soekarno adalah proklamator.</pre>
     }
 
     // ==================== Review Functions ====================
-    function showReview() {
-      hideAllViews();
-      document.getElementById('review-view').classList.remove('hidden');
-      reviewIndex = 0;
-      renderReviewQuestion();
-    }
+   function showReview() {
+  showBuffering(() => {
+    document.getElementById('results-view').classList.add('hidden');
+    document.getElementById('review-view').classList.remove('hidden');
+    renderReview(); // Fungsi untuk menampilkan daftar soal dan jawaban benar
+  }, 800);
+}
 
     function renderReviewQuestion() {
       const q = questions[reviewIndex];
@@ -2547,7 +2595,12 @@ Penjelasan: Merkurius adalah planet terdekat dengan Matahari.`;
       document.getElementById('tab-block-overlay').classList.add('hidden');
       clearLocalProgress();
     }
-
+// Opsional: Otomatis untuk semua tombol dengan class tertentu
+document.querySelectorAll('.btn-buffering').forEach(button => {
+  button.addEventListener('click', () => {
+    showBuffering();
+  });
+});
     // Initialize app
     initApp();
   </script>
